@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/dmarynych/github/issues"
   },
-  "homepage": "https://github.com/dmarynych/github"
+  "homepage": "https://github.com/dmarynych/github",
+  "dependencies": {
+    "redis": "~0.10.0"
+  }
 }
