@@ -3,6 +3,9 @@ var https = require('https'),
     client = redis.createClient();
 
 var Github = function () {
+    this.limit = null;
+    this.limitLeft = null;
+
     this.token = '';
 
 
@@ -15,30 +18,30 @@ var Github = function () {
                 console.log('do query');
                 this.httpQuery(path, params, function (res) {
                     client.hset('ghcache', path, JSON.stringify(res), function () {
-                        callback(res);
+                        callback(JSON.parse(res.body));
                     });
                 });
             }
             else {
                 console.log('cache');
                 var cachedVal = JSON.parse(res);
-                console.log(cachedVal);
                 params.etag = cachedVal.headers.etag;
                 
-                this.httpQuery(path, params, function (res) {
+                this.httpQuery(path, params, function (httpRes) {
                     console.log('done');
-                    if(res.statusCode === 304) {
+                    if(httpRes.statusCode === 304) {
                         console.log('etag cache');
-
-                        callback(cachedVal);
+                        callback(JSON.parse(cachedVal.body));
                     }
                     else {
-                        console.log('cache invalideted');
-                        callback(res);
+                        console.log('cache invalidated');
+                        callback(JSON.parse(httpRes.body));
+
+                        client.hset('ghcache', path, httpRes);
                     }
 
 
-                    client.hset('ghcache', path, JSON.stringify(res));
+
                 });
                 //callback(obj);
             }
@@ -60,13 +63,18 @@ var Github = function () {
             options.headers['If-None-Match'] = params.etag;
         }
 
-        console.log(options);
+        //console.log(options);
         https.get(options, function(res) {
             console.log(res.statusCode);
 
+            this.limit = res.headers['x-ratelimit-limit'];
+            this.limitLeft = res.headers['x-ratelimit-remaining'];
+
             if(res.statusCode === 304) {
                 callback({
-                    statusCode: res.statusCode
+                    statusCode: res.statusCode,
+                    body: null,
+                    headers: res.headers
                 });
             }
             else {
@@ -79,7 +87,9 @@ var Github = function () {
                 });
             }
 
-        }).on('error', function(e) {
+            }
+            .bind(this))
+            .on('error', function(e) {
                 console.log("Got error: " + e.message);
             });
     }
@@ -88,6 +98,6 @@ var Github = function () {
 
 var github = new Github();
 
-github.query('/users/dmarynych', {}, function (res) {
-    console.log(res);
+github.query('/users/dmarynych', {}, function (user) {
+    console.log(user.login +', limit: '+ github.limitLeft +'/'+ github.limit);
 });
