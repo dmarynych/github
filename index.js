@@ -15,7 +15,7 @@ var Github = function () {
             if(!res) {
                 this.httpQuery(path, params, function (res) {
                     client.hset('ghcache', path, JSON.stringify(res), function () {
-                        callback(JSON.parse(res.body));
+                        callback(null, JSON.parse(res.body));
                     });
                 });
             }
@@ -25,10 +25,10 @@ var Github = function () {
                 
                 this.httpQuery(path, params, function (httpRes) {
                     if(httpRes.statusCode === 304) {
-                        callback(JSON.parse(cachedVal.body));
+                        callback(null, JSON.parse(cachedVal.body));
                     }
                     else {
-                        callback(JSON.parse(httpRes.body));
+                        callback(null, JSON.parse(httpRes.body));
                         client.hset('ghcache', path, JSON.stringify(httpRes));
                     }
 
