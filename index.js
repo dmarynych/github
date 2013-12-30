@@ -3,11 +3,12 @@ var https = require('https'),
     querystring = require('querystring'),
     client = redis.createClient();
 
-var Github = function () {
+var Github = function (options) {
     this.limit = null;
     this.limitLeft = null;
 
-    this.token = '';
+    this.token = options.token ? options.token : null;
+
 
 
     this.query = function (path, params, callback) {
@@ -65,6 +66,9 @@ var Github = function () {
         };
         if(params.etag) {
             options.headers['If-None-Match'] = params.etag;
+        }
+        if(this.token) {
+            options.headers['Authorization'] = 'token '+ this.token
         }
 
         //console.log(options);
