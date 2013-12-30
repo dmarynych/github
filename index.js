@@ -1,5 +1,6 @@
 var https = require('https'),
     redis = require("redis"),
+    querystring = require('querystring'),
     client = redis.createClient();
 
 var Github = function () {
@@ -10,6 +11,17 @@ var Github = function () {
 
 
     this.query = function (path, params, callback) {
+        var page = params.page || 0,
+            per_page = params.per_page || 100,
+            paramsStr = querystring.stringify({
+                page: page,
+                per_page: per_page
+            });
+        path = path +'?'+ paramsStr;
+        
+        console.log(path);
+
+
         // first, check cache
         client.hget('ghcache', path, function (err, res) {
             if(!res) {
