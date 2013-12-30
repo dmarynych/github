@@ -12,10 +12,7 @@ var Github = function () {
     this.query = function (path, params, callback) {
         // first, check cache
         client.hget('ghcache', path, function (err, res) {
-            console.log('res', res);
-
             if(!res) {
-                console.log('do query');
                 this.httpQuery(path, params, function (res) {
                     client.hset('ghcache', path, JSON.stringify(res), function () {
                         callback(JSON.parse(res.body));
@@ -23,20 +20,15 @@ var Github = function () {
                 });
             }
             else {
-                console.log('cache');
                 var cachedVal = JSON.parse(res);
                 params.etag = cachedVal.headers.etag;
                 
                 this.httpQuery(path, params, function (httpRes) {
-                    console.log('done');
                     if(httpRes.statusCode === 304) {
-                        console.log('etag cache');
                         callback(JSON.parse(cachedVal.body));
                     }
                     else {
-                        console.log('cache invalidated');
                         callback(JSON.parse(httpRes.body));
-
                         client.hset('ghcache', path, httpRes);
                     }
 
@@ -65,8 +57,6 @@ var Github = function () {
 
         //console.log(options);
         https.get(options, function(res) {
-            console.log(res.statusCode);
-
             this.limit = res.headers['x-ratelimit-limit'];
             this.limitLeft = res.headers['x-ratelimit-remaining'];
 
@@ -96,8 +86,4 @@ var Github = function () {
 };
 
 
-var github = new Github();
-
-github.query('/users/dmarynych', {}, function (user) {
-    console.log(user.login +', limit: '+ github.limitLeft +'/'+ github.limit);
-});
+module.exports = Github;
