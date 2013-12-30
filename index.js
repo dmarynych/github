@@ -18,7 +18,7 @@ var Github = function (options) {
                 page: page,
                 per_page: per_page
             });
-        path = path +'?'+ paramsStr;
+        path = '/'+ path +'?'+ paramsStr;
         
         console.log(path);
 
