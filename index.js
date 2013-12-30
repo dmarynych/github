@@ -68,10 +68,15 @@ var Github = function () {
                 });
             }
             else {
+                var result = "";
                 res.on('data', function (chunk) {
+                    result += chunk;
+                });
+
+                res.on('end', function(){
                     callback({
                         statusCode: res.statusCode,
-                        body: chunk.toString('utf8'),
+                        body: result,
                         headers: res.headers
                     });
                 });
