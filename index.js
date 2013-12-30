@@ -29,7 +29,7 @@ var Github = function () {
                     }
                     else {
                         callback(JSON.parse(httpRes.body));
-                        client.hset('ghcache', path, httpRes);
+                        client.hset('ghcache', path, JSON.stringify(httpRes));
                     }
 
 
