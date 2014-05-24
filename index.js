@@ -26,7 +26,9 @@ var Github = function (options) {
         // first, check cache
         client.hget('ghcache', path, function (err, res) {
             if(!res) {
-                this.httpQuery(path, params, function (res) {
+                this.httpQuery(path, params, function (err, res) {
+                    if(err) callback(err);
+                    
                     client.hset('ghcache', path, JSON.stringify(res), function () {
                         callback(null, JSON.parse(res.body));
                     });
@@ -37,6 +39,8 @@ var Github = function (options) {
                 params.etag = cachedVal.headers.etag;
                 
                 this.httpQuery(path, params, function (httpRes) {
+                    if(err) callback(err);
+                    
                     if(httpRes.statusCode === 304) {
                         callback(null, JSON.parse(cachedVal.body));
                     }
