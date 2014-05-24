@@ -90,7 +90,7 @@ var Github = function (options) {
                 });
 
                 res.on('end', function(){
-                    callback({
+                    callback(null, {
                         statusCode: res.statusCode,
                         body: result,
                         headers: res.headers
@@ -102,6 +102,7 @@ var Github = function (options) {
             .bind(this))
             .on('error', function(e) {
                 console.log("Got error: " + e.message);
+                callback(e.message);
             });
     }
 };
