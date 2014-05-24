@@ -25,7 +25,7 @@ var Github = function (options) {
 
         // first, check cache
         client.hget('ghcache', path, function (err, res) {
-            if(!res) {
+            if(!res || res == 'null') {
                 this.httpQuery(path, params, function (err, res) {
                     if(err) callback(err);
                     
@@ -35,24 +35,35 @@ var Github = function (options) {
                 });
             }
             else {
-                var cachedVal = JSON.parse(res);
-                params.etag = cachedVal.headers.etag;
-                
-                this.httpQuery(path, params, function (httpRes) {
-                    if(err) callback(err);
-                    
-                    if(httpRes.statusCode === 304) {
-                        callback(null, JSON.parse(cachedVal.body));
+                var cachedVal;
+
+                try {
+                    cachedVal = JSON.parse(res);
+                }
+                catch(e) {
+                    callback('JSON parse error');
+                }
+                finally {
+                    if(!cachedVal) {
+                        callback('JSON parse error');
                     }
-                    else {
-                        callback(null, JSON.parse(httpRes.body));
-                        client.hset('ghcache', path, JSON.stringify(httpRes));
-                    }
+
+                    params.etag = cachedVal.headers.etag;
+
+                    this.httpQuery(path, params, function (err, httpRes) {
+                        if(err) callback(err);
+
+                        if(httpRes.statusCode === 304) {
+                            callback(null, JSON.parse(cachedVal.body));
+                        }
+                        else {
+                            callback(null, JSON.parse(httpRes.body));
+                            client.hset('ghcache', path, JSON.stringify(httpRes));
+                        }
+                    });
+                }
 
 
-
-                });
-                //callback(obj);
             }
 
         }.bind(this));
@@ -65,7 +76,6 @@ var Github = function (options) {
             path: path,
             headers: {
                 'User-Agent': 'nodejs'
-                //'If-None-Match': '"de8ea5d318a97df871f1c310cc14a048"'
             }
         };
         if(params.etag) {
@@ -76,12 +86,12 @@ var Github = function (options) {
         }
 
         //console.log(options);
-        https.get(options, function(res) {
+        var req = https.get(options, function(res) {
             this.limit = res.headers['x-ratelimit-limit'];
             this.limitLeft = res.headers['x-ratelimit-remaining'];
 
             if(res.statusCode === 304) {
-                callback({
+                callback(null, {
                     statusCode: res.statusCode,
                     body: null,
                     headers: res.headers
@@ -108,6 +118,11 @@ var Github = function (options) {
                 console.log("Got error: " + e.message);
                 callback(e.message);
             });
+
+            req.setTimeout(3000, function() {
+                callback('https timeout');
+            });
+
     }
 };
 
