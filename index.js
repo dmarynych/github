@@ -19,19 +19,20 @@ var Github = function (options) {
                 per_page: per_page
             });
         path = '/'+ path +'?'+ paramsStr;
-        
-        console.log(path);
-
+        //console.log('query path '+ path);
 
         // first, check cache
         client.hget('ghcache', path, function (err, res) {
             if(!res || res == 'null') {
                 this.httpQuery(path, params, function (err, res) {
-                    if(err) callback(err);
-                    
-                    client.hset('ghcache', path, JSON.stringify(res), function () {
-                        callback(null, JSON.parse(res.body));
-                    });
+                    if(err) {
+                        callback(err)
+                    }
+                    else {
+                        client.hset('ghcache', path, JSON.stringify(res), function () {
+                            callback(null, JSON.parse(res.body));
+                        });
+                    }
                 });
             }
             else {
@@ -51,9 +52,13 @@ var Github = function (options) {
                     params.etag = cachedVal.headers.etag;
 
                     this.httpQuery(path, params, function (err, httpRes) {
-                        if(err) callback(err);
-
-                        if(httpRes.statusCode === 304) {
+                        if(err) {
+                            callback(err)
+                        }
+                        else if(!httpRes) {
+                            callback('http result is empty, '+ path)
+                        }
+                        else if(httpRes.statusCode === 304) {
                             callback(null, JSON.parse(cachedVal.body));
                         }
                         else {
@@ -87,41 +92,40 @@ var Github = function (options) {
 
         //console.log(options);
         var req = https.get(options, function(res) {
-            this.limit = res.headers['x-ratelimit-limit'];
-            this.limitLeft = res.headers['x-ratelimit-remaining'];
+                this.limit = res.headers['x-ratelimit-limit'];
+                this.limitLeft = res.headers['x-ratelimit-remaining'];
 
-            if(res.statusCode === 304) {
-                callback(null, {
-                    statusCode: res.statusCode,
-                    body: null,
-                    headers: res.headers
-                });
-            }
-            else {
-                var result = "";
-                res.on('data', function (chunk) {
-                    result += chunk;
-                });
-
-                res.on('end', function(){
+                if(res.statusCode === 304) {
                     callback(null, {
                         statusCode: res.statusCode,
-                        body: result,
+                        body: null,
                         headers: res.headers
                     });
-                });
-            }
+                }
+                else {
+                    var result = "";
+                    res.on('data', function (chunk) {
+                        result += chunk;
+                    });
+
+                    res.on('end', function(){
+                        callback(null, {
+                            statusCode: res.statusCode,
+                            body: result,
+                            headers: res.headers
+                        });
+                    });
+                }
 
             }
-            .bind(this))
+                .bind(this))
             .on('error', function(e) {
                 console.log("Got error: " + e.message);
                 callback(e.message);
-            });
-
-            req.setTimeout(3000, function() {
-                callback('https timeout');
-            });
+            })
+        /*.setTimeout(3000, function() {
+         callback('https timeout '+ path);
+         });*/
 
     }
 };
