@@ -23,7 +23,7 @@ var Github = function (options) {
 
         // first, check cache
         client.hget('ghcache', path, function (err, res) {
-            if(!res || res == 'null') {
+            if(!res || res == 'null' || res == 'undefined') {
                 this.httpQuery(path, params, function (err, res) {
                     if(err) {
                         callback(err)
